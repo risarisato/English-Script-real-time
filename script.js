@@ -2,18 +2,19 @@ const startButton = document.getElementById("startButton");
 const stopButton = document.getElementById("stopButton");
 const messageList = document.getElementById("messageList");
 
-// Chrome 系を想定
-const SpeechRecognition =
-  window.SpeechRecognition || window.webkitSpeechRecognition;
+// Chrome を想定して、両方を使用を前提、SpeechRecognition が、マイク音声を文字に変換
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const recognition = new SpeechRecognition();
 
+// 初期値の録音状態は false
 let isListening = false;
 
-// 一番下までスクロール
+// スクロール
 function scrollToBottom() {
   const lastMessage = messageList.lastElementChild;
 
+  // 最初はスクロールしない
   if (!lastMessage) {
     return;
   }
@@ -35,10 +36,12 @@ function createMessageRow(text) {
 
   row.appendChild(bubble);
   messageList.appendChild(row);
+
+  // 字幕追加後にスクロール
   scrollToBottom();
 }
 
-// ボタン状態を更新
+// ボタン状態
 function updateButtonState() {
   startButton.disabled = isListening;
   stopButton.disabled = !isListening;
@@ -46,22 +49,30 @@ function updateButtonState() {
 }
 
 // 音声認識の設定
-recognition.lang = "en-US";　//　日本語なら "ja-JP"　両方だと精度低い
-recognition.continuous = true;
-recognition.interimResults = false; // 途中字幕は使わない
+recognition.lang = "en-US"; // 日本語なら "ja-JP" 両方だと精度が低い
+recognition.continuous = true; // 録音を続ける→話し終わるたびにすぐ終了させない
+recognition.interimResults = false; // 途中字幕は使わない→確定字幕のみ
 
-// 認識開始
+// 音声認識開始
 recognition.addEventListener("start", () => {
-  isListening = true;
+  isListening = true; // このタイミングで録音中フラグをtrueにし、ボタン表示を更新
   updateButtonState();
 });
 
-// 確定字幕だけ追加
+// 音声認識の結果を受け取り
+/*
+ * event.results の中に音声認識結果が入っている
+ * 確定字幕した結果を扱うため、isFinal が true のものだけを処理する
+ * 文字列の前後の空白を trimで削除して、空でない場合は字幕エリアに追加する
+ */
 recognition.addEventListener("result", (event) => {
   for (let i = event.resultIndex; i < event.results.length; i += 1) {
+    // ブラウザが「この発話は確定した」と判断した結果だけ使う
     if (event.results[i].isFinal) {
+      // 文字列の前後の空白をtrimで削除
       const transcript = event.results[i][0].transcript.trim();
 
+      // 字幕追加
       if (transcript) {
         createMessageRow(transcript);
       }
@@ -69,13 +80,13 @@ recognition.addEventListener("result", (event) => {
   }
 });
 
-// エラー時は停止扱い
+// マイクの許可しないときのエラー：録音を false に戻す
 recognition.addEventListener("error", () => {
   isListening = false;
   updateButtonState();
 });
 
-// 認識終了時
+// 終了時、停止時も同じ：録音を false に戻す
 recognition.addEventListener("end", () => {
   isListening = false;
   updateButtonState();
@@ -83,10 +94,12 @@ recognition.addEventListener("end", () => {
 
 // 開始ボタン
 startButton.addEventListener("click", () => {
+  // 録音中か
   if (isListening) {
     return;
   }
 
+  // recognition.startでChromeが「マイクを許可」の確認を表示
   recognition.start();
 });
 
@@ -99,4 +112,5 @@ stopButton.addEventListener("click", () => {
   recognition.stop();
 });
 
+// 初期状態のボタン表示
 updateButtonState();
