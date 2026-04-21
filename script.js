@@ -2,9 +2,8 @@ const startButton = document.getElementById("startButton");
 const stopButton = document.getElementById("stopButton");
 const messageList = document.getElementById("messageList");
 
-// Chrome を想定して、両方を使用を前提、SpeechRecognition が、マイク音声を文字に変換
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
+// Chromeブラウザの機能で、マイク音声を文字に変換している
+const SpeechRecognition = window.SpeechRecognition;
 const recognition = new SpeechRecognition();
 
 // 初期値の録音状態は false
